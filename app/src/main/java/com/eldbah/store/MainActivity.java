@@ -65,6 +65,17 @@ public class MainActivity extends Activity {
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         web.setBackgroundColor(Color.WHITE);
+        web.setOnLongClickListener(v -> {
+            WebView.HitTestResult hit = web.getHitTestResult();
+            String shareUrl = hit != null && hit.getExtra() != null ? hit.getExtra() : web.getUrl();
+            if (shareUrl == null || shareUrl.isEmpty()) return false;
+            Intent share = new Intent(Intent.ACTION_SEND);
+            share.setType("text/plain");
+            share.putExtra(Intent.EXTRA_TEXT, "شوف المنتج ده من مؤسسة الدبّاح: " + shareUrl);
+            try { startActivity(Intent.createChooser(share, "مشاركة رابط المنتج")); }
+            catch (Exception ignored) { }
+            return true;
+        });
 
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onProgressChanged(WebView v, int p) {
