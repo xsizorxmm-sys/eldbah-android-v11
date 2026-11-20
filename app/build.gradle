@@ -1,5 +1,9 @@
 plugins { id 'com.android.application' }
 
+dependencies {
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+}
+
 def releaseStorePath = System.getenv("ELDBAH_STORE_FILE")
 
 android {
@@ -9,8 +13,8 @@ android {
         applicationId 'com.eldbah.store'
         minSdk 23
         targetSdk 35
-        versionCode 10
-        versionName '2.8'
+        versionCode 11
+        versionName '2.9'
     }
     signingConfigs {
         release {
