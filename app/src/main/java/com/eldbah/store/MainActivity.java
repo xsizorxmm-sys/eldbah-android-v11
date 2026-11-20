@@ -71,7 +71,9 @@ public class MainActivity extends Activity {
             if (shareUrl == null || shareUrl.isEmpty()) return false;
             Intent share = new Intent(Intent.ACTION_SEND);
             share.setType("text/plain");
-            share.putExtra(Intent.EXTRA_TEXT, "شوف المنتج ده من مؤسسة الدبّاح: " + shareUrl);
+            String title = web.getTitle();
+            String message = (title != null && !title.trim().isEmpty() ? title + "\n" : "") + "شوف المنتج ده من مؤسسة الدبّاح: " + shareUrl;
+            share.putExtra(Intent.EXTRA_TEXT, message);
             try { startActivity(Intent.createChooser(share, "مشاركة رابط المنتج")); }
             catch (Exception ignored) { }
             return true;
