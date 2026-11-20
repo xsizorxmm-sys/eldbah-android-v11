@@ -1,4 +1,5 @@
 plugins { id 'com.android.application' }
+
 android {
     namespace 'com.eldbah.store'
     compileSdk 35
@@ -6,7 +7,14 @@ android {
         applicationId 'com.eldbah.store'
         minSdk 23
         targetSdk 35
-        versionCode 9
-        versionName '2.7'
+        versionCode 10
+        versionName '2.8'
+    }
+    buildTypes {
+        debug { debuggable true }
+        release {
+            minifyEnabled false
+            // Configure signing only from private GitHub Actions Secrets.
+        }
     }
 }
