@@ -14,6 +14,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -21,9 +22,12 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
+    private static final String HOME_URL = "https://eldbah.com";
     private WebView web;
     private ProgressBar progress;
     private View splash;
+    private View offlineView;
+    private boolean pageFailed = false;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -39,6 +43,9 @@ public class MainActivity extends Activity {
         root.addView(progress, new FrameLayout.LayoutParams(-1, dp(3), Gravity.TOP));
         splash = makeSplash();
         root.addView(splash, new FrameLayout.LayoutParams(-1, -1));
+        offlineView = makeOfflineView();
+        offlineView.setVisibility(View.GONE);
+        root.addView(offlineView, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
 
         WebSettings s = web.getSettings();
@@ -57,7 +64,7 @@ public class MainActivity extends Activity {
             @Override public void onProgressChanged(WebView v, int p) {
                 progress.setProgress(p);
                 progress.setVisibility(p >= 100 ? View.GONE : View.VISIBLE);
-                if (p >= 100) hideSplash();
+                if (p >= 100 && !pageFailed) hideSplash();
             }
         });
         web.setWebViewClient(new WebViewClient() {
@@ -68,10 +75,31 @@ public class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView v, String url) {
                 return route(Uri.parse(url));
             }
-            @Override public void onPageFinished(WebView v, String url) { hideSplash(); }
+            @Override public void onPageStarted(WebView v, String url, android.graphics.Bitmap favicon) {
+                pageFailed = false;
+                offlineView.setVisibility(View.GONE);
+                progress.setVisibility(View.VISIBLE);
+                if (splash != null && splash.getVisibility() == View.GONE && v.getUrl() == null) {
+                    splash.setAlpha(1f);
+                    splash.setVisibility(View.VISIBLE);
+                }
+            }
+            @Override public void onPageFinished(WebView v, String url) {
+                if (!pageFailed) {
+                    hideSplash();
+                    offlineView.setVisibility(View.GONE);
+                }
+            }
+            @Override public void onReceivedError(WebView v, WebResourceRequest request, android.webkit.WebResourceError error) {
+                if (request.isForMainFrame()) showOffline();
+            }
+            @Override public void onReceivedHttpError(WebView v, WebResourceRequest request, android.webkit.WebResourceResponse response) {
+                if (request.isForMainFrame() && response.getStatusCode() >= 400) showOffline();
+            }
         });
-        if (state != null) web.restoreState(state);
-        else web.loadUrl("https://eldbah.com");
+        if (state != null) {
+            if (web.restoreState(state) == null) web.loadUrl(HOME_URL);
+        } else web.loadUrl(HOME_URL);
     }
 
     private View makeSplash() {
@@ -80,14 +108,12 @@ public class MainActivity extends Activity {
         box.setGravity(Gravity.CENTER);
         box.setPadding(dp(24), dp(30), dp(24), dp(30));
         box.setBackgroundColor(Color.rgb(244, 248, 252));
-
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.drawable.ic_launcher_logo);
         logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(190), dp(190));
         lp.bottomMargin = dp(20);
         box.addView(logo, lp);
-
         TextView name = new TextView(this);
         name.setText("مؤسسة الدبّاح");
         name.setTextColor(Color.rgb(18, 81, 181));
@@ -95,7 +121,6 @@ public class MainActivity extends Activity {
         name.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         name.setGravity(Gravity.CENTER);
         box.addView(name, new LinearLayout.LayoutParams(-1, -2));
-
         TextView line = new TextView(this);
         line.setText("للعدد والأدوات والمعدات");
         line.setTextColor(Color.rgb(16, 24, 32));
@@ -104,7 +129,6 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams lineLp = new LinearLayout.LayoutParams(-1, -2);
         lineLp.topMargin = dp(8);
         box.addView(line, lineLp);
-
         ProgressBar spinner = new ProgressBar(this);
         LinearLayout.LayoutParams spinLp = new LinearLayout.LayoutParams(dp(34), dp(34));
         spinLp.topMargin = dp(28);
@@ -118,6 +142,54 @@ public class MainActivity extends Activity {
         loadLp.topMargin = dp(10);
         box.addView(loading, loadLp);
         return box;
+    }
+
+    private View makeOfflineView() {
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setGravity(Gravity.CENTER);
+        panel.setPadding(dp(28), dp(30), dp(28), dp(30));
+        panel.setBackgroundColor(Color.rgb(248, 250, 253));
+        TextView title = new TextView(this);
+        title.setText("تعذر الاتصال بالمتجر");
+        title.setTextColor(Color.rgb(18, 81, 181));
+        title.setTextSize(22);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setGravity(Gravity.CENTER);
+        panel.addView(title, new LinearLayout.LayoutParams(-1, -2));
+        TextView message = new TextView(this);
+        message.setText("تأكد من اتصال الإنترنت وحاول مرة أخرى.");
+        message.setTextColor(Color.rgb(50, 60, 75));
+        message.setTextSize(15);
+        message.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams messageLp = new LinearLayout.LayoutParams(-1, -2);
+        messageLp.topMargin = dp(12);
+        panel.addView(message, messageLp);
+        Button retry = new Button(this);
+        retry.setText("إعادة المحاولة");
+        retry.setOnClickListener(v -> loadHome());
+        LinearLayout.LayoutParams retryLp = new LinearLayout.LayoutParams(-2, -2);
+        retryLp.topMargin = dp(22);
+        panel.addView(retry, retryLp);
+        return panel;
+    }
+
+    private void loadHome() {
+        pageFailed = false;
+        offlineView.setVisibility(View.GONE);
+        if (splash != null) {
+            splash.setAlpha(1f);
+            splash.setVisibility(View.VISIBLE);
+        }
+        progress.setVisibility(View.VISIBLE);
+        web.loadUrl(HOME_URL);
+    }
+
+    private void showOffline() {
+        pageFailed = true;
+        progress.setVisibility(View.GONE);
+        hideSplash();
+        offlineView.setVisibility(View.VISIBLE);
     }
 
     private void hideSplash() {
@@ -145,7 +217,10 @@ public class MainActivity extends Activity {
         super.onSaveInstanceState(out);
     }
     @Override public void onBackPressed() {
-        if (web != null && web.canGoBack()) web.goBack();
+        if (offlineView != null && offlineView.getVisibility() == View.VISIBLE) {
+            offlineView.setVisibility(View.GONE);
+            if (web != null) web.goBack();
+        } else if (web != null && web.canGoBack()) web.goBack();
         else super.onBackPressed();
     }
     @Override protected void onDestroy() {
