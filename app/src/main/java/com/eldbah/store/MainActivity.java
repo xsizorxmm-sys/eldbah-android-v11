@@ -20,6 +20,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends Activity {
@@ -75,7 +76,7 @@ public class MainActivity extends Activity {
             String message = (title != null && !title.trim().isEmpty() ? title + "\n" : "") + "شوف المنتج ده من مؤسسة الدبّاح: " + shareUrl;
             share.putExtra(Intent.EXTRA_TEXT, message);
             try { startActivity(Intent.createChooser(share, "مشاركة رابط المنتج")); }
-            catch (Exception ignored) { }
+            catch (Exception ignored) { Toast.makeText(MainActivity.this, "تعذر فتح المشاركة", Toast.LENGTH_SHORT).show(); }
             return true;
         });
 
@@ -228,7 +229,7 @@ public class MainActivity extends Activity {
         if ((scheme.equals("https") || scheme.equals("http")) &&
             (host.equals("eldbah.com") || host.equals("www.eldbah.com") || host.endsWith(".eldbah.com"))) return false;
         try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
-        catch (Exception ignored) { }
+        catch (Exception ignored) { Toast.makeText(this, "لا يوجد تطبيق مناسب لفتح الرابط", Toast.LENGTH_SHORT).show(); }
         return true;
     }
 
@@ -240,8 +241,10 @@ public class MainActivity extends Activity {
     }
     @Override public void onBackPressed() {
         if (offlineView != null && offlineView.getVisibility() == View.VISIBLE) {
-            offlineView.setVisibility(View.GONE);
-            if (web != null) web.goBack();
+            if (web != null && web.canGoBack()) {
+                offlineView.setVisibility(View.GONE);
+                web.goBack();
+            } else super.onBackPressed();
         } else if (web != null && web.canGoBack()) web.goBack();
         else super.onBackPressed();
     }
