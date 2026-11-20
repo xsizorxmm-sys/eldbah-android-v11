@@ -20,10 +20,12 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends Activity {
     private static final String HOME_URL = "https://eldbah.com";
     private WebView web;
+    private SwipeRefreshLayout refreshLayout;
     private ProgressBar progress;
     private View splash;
     private View offlineView;
@@ -36,10 +38,14 @@ public class MainActivity extends Activity {
 
         FrameLayout root = new FrameLayout(this);
         web = new WebView(this);
+        refreshLayout = new SwipeRefreshLayout(this);
+        refreshLayout.setColorSchemeColors(Color.rgb(18, 81, 181));
+        refreshLayout.setOnRefreshListener(() -> web.reload());
+        refreshLayout.addView(web, new SwipeRefreshLayout.LayoutParams(-1, -1));
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setMax(100);
         progress.setIndeterminate(false);
-        root.addView(web, new FrameLayout.LayoutParams(-1, -1));
+        root.addView(refreshLayout, new FrameLayout.LayoutParams(-1, -1));
         root.addView(progress, new FrameLayout.LayoutParams(-1, dp(3), Gravity.TOP));
         splash = makeSplash();
         root.addView(splash, new FrameLayout.LayoutParams(-1, -1));
@@ -64,6 +70,7 @@ public class MainActivity extends Activity {
             @Override public void onProgressChanged(WebView v, int p) {
                 progress.setProgress(p);
                 progress.setVisibility(p >= 100 ? View.GONE : View.VISIBLE);
+                if (p >= 100) refreshLayout.setRefreshing(false);
                 if (p >= 100 && !pageFailed) hideSplash();
             }
         });
@@ -85,6 +92,7 @@ public class MainActivity extends Activity {
                 }
             }
             @Override public void onPageFinished(WebView v, String url) {
+                refreshLayout.setRefreshing(false);
                 if (!pageFailed) {
                     hideSplash();
                     offlineView.setVisibility(View.GONE);
@@ -187,6 +195,7 @@ public class MainActivity extends Activity {
 
     private void showOffline() {
         pageFailed = true;
+        refreshLayout.setRefreshing(false);
         progress.setVisibility(View.GONE);
         hideSplash();
         offlineView.setVisibility(View.VISIBLE);
@@ -224,6 +233,7 @@ public class MainActivity extends Activity {
         else super.onBackPressed();
     }
     @Override protected void onDestroy() {
+        if (refreshLayout != null) refreshLayout.setOnRefreshListener(null);
         if (web != null) {
             web.stopLoading();
             web.setWebViewClient(null);
