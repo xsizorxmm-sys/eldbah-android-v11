@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main, master ]
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -68,3 +68,14 @@ jobs:
             app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish public APK release
+        if: steps.signing.outputs.release_ready == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: eldbah-android-${{ github.run_number }}
+          name: مؤسسة الدبّاح Android – Build ${{ github.run_number }}
+          files: app/build/outputs/apk/release/app-release.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
