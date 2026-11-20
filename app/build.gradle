@@ -1,5 +1,7 @@
 plugins { id 'com.android.application' }
 
+def releaseStorePath = System.getenv("ELDBAH_STORE_FILE")
+
 android {
     namespace 'com.eldbah.store'
     compileSdk 35
@@ -10,11 +12,24 @@ android {
         versionCode 10
         versionName '2.8'
     }
+    signingConfigs {
+        release {
+            if (releaseStorePath) {
+                storeFile file(releaseStorePath)
+                storePassword System.getenv("ELDBAH_STORE_PASSWORD")
+                keyAlias System.getenv("ELDBAH_KEY_ALIAS")
+                keyPassword System.getenv("ELDBAH_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         debug { debuggable true }
         release {
             minifyEnabled false
-            // Configure signing only from private GitHub Actions Secrets.
+            // Signing is enabled only when private GitHub Actions secrets are present.
+            if (releaseStorePath) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
