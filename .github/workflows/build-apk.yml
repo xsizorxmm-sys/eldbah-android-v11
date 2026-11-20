@@ -19,6 +19,11 @@ jobs:
           packages: 'platform-tools'
       - name: Install Android SDK platform and build tools
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Install مؤسسة الدبّاح launcher icon
+        run: |
+          mkdir -p app/src/main/res/drawable-nodpi
+          base64 --decode branding/launcher-logo.jpg.b64 > app/src/main/res/drawable-nodpi/ic_launcher_logo.jpg
+          file app/src/main/res/drawable-nodpi/ic_launcher_logo.jpg
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
