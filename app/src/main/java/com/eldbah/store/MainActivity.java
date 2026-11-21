@@ -65,6 +65,8 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        // Keep target=_blank links in this single WebView; avoid spawning unmanaged windows.
+        s.setSupportMultipleWindows(false);
         web.setBackgroundColor(Color.WHITE);
         web.setOnLongClickListener(v -> {
             WebView.HitTestResult hit = web.getHitTestResult();
