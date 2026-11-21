@@ -65,6 +65,8 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        // Keep target=_blank links in this single WebView; avoid spawning unmanaged windows.
+        s.setSupportMultipleWindows(false);
         web.setBackgroundColor(Color.WHITE);
         web.setOnLongClickListener(v -> {
             WebView.HitTestResult hit = web.getHitTestResult();
@@ -226,8 +228,14 @@ public class MainActivity extends Activity {
     private boolean route(Uri uri) {
         String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
-        if ((scheme.equals("https") || scheme.equals("http")) &&
-            (host.equals("eldbah.com") || host.equals("www.eldbah.com") || host.endsWith(".eldbah.com"))) return false;
+        boolean internalHost = host.equals("eldbah.com") || host.equals("www.eldbah.com") || host.endsWith(".eldbah.com");
+        if (internalHost && scheme.equals("http")) {
+            // Normalize internal links to HTTPS because cleartext traffic is disabled.
+            Uri secureUri = uri.buildUpon().scheme("https").clearPort().build();
+            web.loadUrl(secureUri.toString());
+            return true;
+        }
+        if (internalHost && scheme.equals("https")) return false;
         try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
         catch (Exception ignored) { Toast.makeText(this, "لا يوجد تطبيق مناسب لفتح الرابط", Toast.LENGTH_SHORT).show(); }
         return true;
